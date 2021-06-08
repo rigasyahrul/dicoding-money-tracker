@@ -1,0 +1,14 @@
+version: '3.3'
+
+services:
+  dashboard-kkj:
+    build:
+      context: './deployments'
+    ports:
+      - target: 80
+        published: ${APP_PORT}
+        protocol: tcp
+        mode: host
+    volumes:
+      - .:/var/app:cached
+    restart: unless-stopped
