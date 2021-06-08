@@ -1,7 +1,7 @@
 version: '3.3'
 
 services:
-  dashboard-kkj:
+  dicoding-frontend:
     build:
       context: './deployments'
     ports:

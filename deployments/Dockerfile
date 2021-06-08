@@ -1,32 +1,28 @@
-FROM php:7.2-apache
+FROM php:7.4-apache
 
-# Install Extension
+# Define dependencies
+ENV BUILD_PACKAGES="libpng-dev libwebp-dev libgmp-dev libjpeg62-turbo-dev libfreetype6-dev zlib1g-dev libzip-dev libpq-dev libicu-dev g++ libonig-dev"
+
+# Install required app
 RUN apt-get update \
-  && apt-get install -y git unzip libpng-dev libwebp-dev libgmp-dev libjpeg62-turbo-dev libfreetype6-dev zlib1g-dev libzip-dev libpq-dev libicu-dev \
-  && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-  && docker-php-ext-install zip gd pdo_mysql mysqli \
-  && rm -rf /var/lib/apt/lists/* \
-  && a2enmod rewrite
+  && apt-get install -y git unzip ${BUILD_PACKAGES}
 
-# Get composer-setup file
-RUN cd /tmp && \
-  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-
-# Install composer
-RUN php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
-
-# Set workdir
-WORKDIR /var/app
-
-# Copy virtual host file
-COPY 000-default.conf /etc/apache2/sites-available/
-
-# Copy php.ini
-COPY php.ini $PHP_INI_DIR/php.ini
+# Install extensions
+RUN docker-php-ext-configure gd --with-freetype --with-webp --with-jpeg \
+	&& docker-php-ext-configure intl \
+    && docker-php-ext-install pdo_pgsql mbstring opcache bcmath iconv exif zip gd pdo intl
 
 # Enable mod_rewrite
 RUN if command -v a2enmod >/dev/null 2>&1; then \
       a2enmod rewrite headers \
     ;fi
 
-RUN service apache2 restart
+# Copy virtual host file
+COPY 000-default.conf /etc/apache2/sites-available/
+
+# Clean up
+RUN apt-get remove --purge -y ${BUILD_PACKAGES} \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Set workdir
+WORKDIR /var/app
